@@ -7,9 +7,10 @@ from random import randint
 client = discord.Client()
 cmdPrefix = '^'
 
-inDungeon = []
+inDungeon = {}
 roomNumber = {}
 currentRoom = {}
+currentMessage = {}
 #########################
 
 ### Methods ###
@@ -19,32 +20,31 @@ def genRoom(roomNumber, shop = False):
     size = 0
     
     if not shop:
-        if roomRumber == 0:
+        if roomNumber == 0:
             size = 21
         #elif roomNumber < 5:
 
         ySize = randint(size / 3, size)
-        zSize = randint(size / 3, size)
+        xSize = randint(size / 3, size)
 
-        room.append(list('#' * xSize))
+        room.append(list('#' * (xSize + 2)))
         for y in range(ySize):
-            room.append([])
-            for x in range(xSize):
-                room[y] += '#' + ('_' * xSize) + '#'
-        room.append(list('#' * xSize))
+            room.append(list('#' + ('_' * xSize) + '#'))
+        room.append(list('#' * (xSize + 2)))
     else:
         size = 100 #idk
 
     return room
 
-def sendRoom(channel, room):
+async def sendRoom(channel, authorId):
+    room = currentRoom[authorId]
     s = '```'
     for i in range(len(room)):
-        (s + '\n').join(room[i])
+        s = (s + '\n') + ''.join(room[i])
 
     s += '\n```'
     
-    await client.send_message(channel, s)
+    currentMessage[authorId] = await client.send_message(channel, '<@' + authorId + '>\'s current map:\n' + s)
 
 ###############
 
@@ -58,24 +58,46 @@ async def on_ready():
 async def on_message(message):
     if message.author != client.user:
         content = message.content
+        authorId = message.author.id
         
         if inDungeon:
             if content.startswith('quit'):
-                inDungeon[message.author.id] = False
+                inDungeon[authorId] = False
+                await client.send_message(message.channel, '<@' + authorId + '>: Quit game of Dungeons')
             elif content.startswith('check'):
-                sendRoom(message.channel, currentRoom[message.author.id])
+                await sendRoom(message.channel, authorId)
+            elif content.startswith('help'):
+                s = '```\n'
+                s += 'Commands:\n'
+                s += '   help - Sends this message\n'
+                s += '   quit - Quits game (Note: game NOT saved)\n'
+                s += '   check - Outputs your current map\n'
+
+                s += 'Interactive Commands:
+                s += ' > When used, these commands will update the game and then your message will be deleted <
+                s += '   '
+
+                s += 'Map Icons:\n'
+                s += '   # - Wall\n'
+                s += '   _ - Floor / empty space\n'
+                s += '   @ - You!\n'
+
+                s += '```'
+                await client.send_message(message.channel, s)
+                
         elif message.content.startswith(cmdPrefix):
             content = message.content[1:]
 
             if content.startswith('printText'):
                 print(message.content)
             elif content.startswith('dungeons'):
-                await client.send_message("Welcome to DUNGEONS!\n\n Dungeons is a top down turn based rpg\nType 'help' at any time to check availible commands. You cna also type 'quit' to exit the game.")
-                inDungeon[message.author.id] = True
-                roomNumber[message.author.id] = 0
-                currentRoom[message.author.id] = genRoom(0)
-                
-                
+                await client.send_message(message.channel, "Welcome to DUNGEONS!\n\n Dungeons is a top down, turn based rpg!\n\nType 'help' at any time to check available commands.\nYou can also type 'quit' to exit the game.")
+                inDungeon[authorId] = True
+                roomNumber[authorId] = 0
+                currentRoom[authorId] = genRoom(0)
+
+                await sendRoom(message.channel, authorId)
+                                
 '''
 @client.event
 async def on_message_delete(message):
