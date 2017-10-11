@@ -3,9 +3,10 @@ import asyncio
 import copy
 
 from random import randint
+from discord.ext import commands
 
 #### Global variables ###
-client = discord.Client()
+bot = commands.Bot(command_prefix = '^')
 cmdPrefix = '^'
 
 inDungeon = [] #List of user (ids) playing dungeons
@@ -60,33 +61,33 @@ async def sendRoom(channel, authorId):
     room = getRoomMessage(authorId)
 
     if authorId in currentMessage:
-        await client.delete_message(currentMessage[authorId])
+        await bot.delete_message(currentMessage[authorId])
         
     currentMessage[authorId] = await client.send_message(channel, '<@' + authorId + '>\'s current map:\n' + room)
 
 #Updates map message
 async def updateRoom(authorId):
-    await client.edit_message(currentMessage[authorId], new_content = ('<@' + authorId + '>\'s current map:\n' + getRoomMessage(authorId)))
+    await bot.edit_message(currentMessage[authorId], new_content = ('<@' + authorId + '>\'s current map:\n' + getRoomMessage(authorId)))
 
 ###############
 
 
 ### Events ###
-@client.event
+@bot.event
 async def on_ready():
 	print('Ready!')
 
-@client.event
+@bot.event
 async def on_message(message):
-    if message.author != client.user:
+    if message.author != bot.user:
         content = message.content
         authorId = message.author.id
         
         if inDungeon:
             if content.startswith('quit'):
                 inDungeon.remove(authorId)
-                await client.send_message(message.channel, '<@' + authorId + '>: Quit game of Dungeons')
-                await client.delete_message(currentMessage[authorId])
+                await bot.send_message(message.channel, '<@' + authorId + '>: Quit game of Dungeons')
+                await bot.delete_message(currentMessage[authorId])
                 del currentMessage[authorId]
             elif content.startswith('check'):
                 await sendRoom(message.channel, authorId)
@@ -113,29 +114,32 @@ async def on_message(message):
                 s += '   @ - You!\n'
 
                 s += '```'
-                await client.send_message(message.channel, s)
+                await bot.send_message(message.channel, s)
 
             elif content.startswith('w') or content.startswith('up'):
                 if currentPos[authorId][0] > 1:
                     currentPos[authorId][0] -= 1
-                await client.delete_message(message)
+                await bot.delete_message(message)
                 await updateRoom(authorId)
             elif content.startswith('a') or content.startswith('left'):
                 if currentPos[authorId][1] > 1:
                     currentPos[authorId][1] -= 1
-                await client.delete_message(message)
+                await bot.delete_message(message)
                 await updateRoom(authorId)
             elif content.startswith('s') or content.startswith('down'):
                 if currentPos[authorId][0] < len(currentRoom[authorId]) - 2:
                     currentPos[authorId][0] += 1
-                await client.delete_message(message)
+                await bot.delete_message(message)
                 await updateRoom(authorId)
             elif content.startswith('d') or content.startswith('right'):
                 if currentPos[authorId][1] < len(currentRoom[authorId][0]) - 2:
                     currentPos[authorId][1] += 1
-                await client.delete_message(message)
+                await bot.delete_message(message)
                 await updateRoom(authorId)
-                
+
+        else:
+            await bot.process_commands(message)
+"""                
         elif message.content.startswith(cmdPrefix):
             content = message.content[1:]
 
@@ -158,7 +162,17 @@ async def on_message(message):
                 await sendRoom(message.channel, authorId)
             elif content.startswith('resume'):
                 inDungeon.append(authorId)
-                                
+"""
+    
+                
+#Commands
+@bot.command(aliases = ['invite'], help='Retrives the invite URL for this bot.')
+async def url():
+    await bot.say('https://discordapp.com/oauth2/authorize?client_id=258031474404491265&scope=bot&permissions=36793353\nAdd me <3')
+    
+
+
+
 '''
 @client.event
 async def on_message_delete(message):
@@ -168,4 +182,4 @@ async def on_message_delete(message):
 
 
 #Run client
-client.run('MjU4MDMxNDc0NDA0NDkxMjY1.DLaHmA.lhIzwxq4aeHtOe1llCeZ2BluOdA')
+bot.run('MjU4MDMxNDc0NDA0NDkxMjY1.DLaHmA.lhIzwxq4aeHtOe1llCeZ2BluOdA')
