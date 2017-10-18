@@ -1,38 +1,42 @@
 import discord
-import asyncio
-import copy
 import dungeon
 
-from random import randint
 from discord.ext import commands
 
-#### Global variables ###
+# Global variables #
 bot = commands.Bot(command_prefix = '^')
 cmdPrefix = '^'
 
-dungeons = [] #List of player dungeons
+players = []  # List of player dungeons
 #########################
 
 
-### Events ###
+# Events #
 @bot.event
 async def on_ready():
-	print('Ready!')
+    print('Ready!')
+
 
 @bot.event
 async def on_message(message):
     if message.author != bot.user:
         content = message.content
-        authorId = message.author.id
+        author_id = message.author.id
+
+        try: 
+            player = next(x for x in players if x.id == author_id)
+
+        except:
+            player = None
         
-        if inDungeon:
+        if player is not None and player.active:
             if content.startswith('quit'):
-                inDungeon.remove(authorId)
-                await bot.send_message(message.channel, '<@' + authorId + '>: Quit game of Dungeons')
-                await bot.delete_message(currentMessage[authorId])
-                del currentMessage[authorId]
+                players.remove(player)
+                await player.quit(bot, message.channel)
+            elif content.startswith('save'):
+                player.active = False
             elif content.startswith('check'):
-                await sendRoom(message.channel, authorId)
+                await player.sendRoom(bot, message.channel)
             elif content.startswith('help'):
                 s =  '```\n'
                 s += 'Help for DUNGEONS\n\n'
@@ -60,45 +64,39 @@ async def on_message(message):
                 await bot.send_message(message.channel, s)
 
             elif content.startswith('w') or content.startswith('up'):
-                if currentPos[authorId][0] > 1:
-                    currentPos[authorId][0] -= 1
-                await bot.delete_message(message)
-                await updateRoom(authorId)
+                player.move(-1, 0)
+                await player.update_room(bot)
             elif content.startswith('a') or content.startswith('left'):
-                if currentPos[authorId][1] > 1:
-                    currentPos[authorId][1] -= 1
-                await bot.delete_message(message)
-                await updateRoom(authorId)
+                player.move(0, -1)
+                await player.update_room(bot)
             elif content.startswith('s') or content.startswith('down'):
-                if currentPos[authorId][0] < len(currentRoom[authorId]) - 2:
-                    currentPos[authorId][0] += 1
-                await bot.delete_message(message)
-                await updateRoom(authorId)
+                player.move(1, 0)
+                await player.update_room(bot)
             elif content.startswith('d') or content.startswith('right'):
-                if currentPos[authorId][1] < len(currentRoom[authorId][0]) - 2:
-                    currentPos[authorId][1] += 1
-                await bot.delete_message(message)
-                await updateRoom(authorId)
+                player.move(0, 1)
+                await player.update_room(bot)
 
         else:
             await bot.process_commands(message)
     
                 
-#Commands
+# Commands
 @bot.command(aliases = ['invite'], help='Retrieves the invite URL for this bot.')
 async def url():
     await bot.say('https://discordapp.com/oauth2/authorize?client_id=258031474404491265&scope=bot&permissions=36793353\nAdd me <3')
+
 
 @bot.command(pass_context=True)
 async def dungeons(ctx):
     await bot.say("Welcome to DUNGEONS!\n\n Dungeons is a top down, turn based rpg!\n\nType 'help' at any time to check available commands.\nYou can also type 'quit' to exit the game.")
     d = dungeon.Dungeon(ctx.message.author.id)
-    await d.sendRoom(bot, ctx.message.channel)
-    dungeons.append(d)
+    await d.send_room(bot, ctx.message.channel)
+    players.append(d)
+
 
 @bot.command(pass_context=True)
 async def resume(ctx):
-    first(
+    pass
 
 ###############
 
