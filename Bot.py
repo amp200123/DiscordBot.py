@@ -4,7 +4,7 @@ import dungeon
 from discord.ext import commands
 
 # Global variables #
-bot = commands.Bot(command_prefix = '^')
+bot = commands.Bot(command_prefix='^')
 cmdPrefix = '^'
 
 players = []  # List of player dungeons
@@ -34,7 +34,7 @@ async def on_message(message):
                 players.remove(player)
                 await player.quit(bot, message.channel)
             elif content.startswith('save'):
-                player.active = False
+                player.quit(bot, message.channel, save=True)
             elif content.startswith('check'):
                 await player.sendRoom(bot, message.channel)
             elif content.startswith('help'):
@@ -81,7 +81,7 @@ async def on_message(message):
     
                 
 # Commands
-@bot.command(aliases = ['invite'], help='Retrieves the invite URL for this bot.')
+@bot.command(aliases=['invite'], help='Retrieves the invite URL for this bot.')
 async def url():
     await bot.say('https://discordapp.com/oauth2/authorize?client_id=258031474404491265&scope=bot&permissions=36793353\nAdd me <3')
 
@@ -101,5 +101,6 @@ async def resume(ctx):
 ###############
 
 
-#Run client
+# Run client
+# noinspection SpellCheckingInspection
 bot.run('MjU4MDMxNDc0NDA0NDkxMjY1.DLaHmA.lhIzwxq4aeHtOe1llCeZ2BluOdA')
